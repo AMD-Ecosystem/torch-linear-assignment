@@ -19,7 +19,7 @@ calls use the lazy Triton backend.
 
 ## Backend and release policy
 
-The active release line is `0.1.0+`. It uses Triton on validated Linux NVIDIA GPUs with compute capability 8.0 or newer and SciPy everywhere else. Unsupported CUDA inputs are solved by the SciPy CPU fallback and returned to the input device. The compiled CUDA extension belongs to the maintenance-only `0.0.x` line and is documented separately in [Legacy CUDA implementation (`0.0.x`)](#legacy-cuda-implementation-00x). If that backend needs a compatibility or correctness fix, the project can issue another `0.0.x` release without adopting the Triton overhaul.
+The active release line is `0.1.0+`. It uses Triton on validated Linux NVIDIA GPUs with compute capability 8.0 or newer, on Linux AMD GPUs with a ROCm build of PyTorch, and SciPy everywhere else. Unsupported CUDA inputs are solved by the SciPy CPU fallback and returned to the input device. The compiled CUDA extension belongs to the maintenance-only `0.0.x` line and is documented separately in [Legacy CUDA implementation (`0.0.x`)](#legacy-cuda-implementation-00x). If that backend needs a compatibility or correctness fix, the project can issue another `0.0.x` release without adopting the Triton overhaul.
 
 ## Install
 
@@ -75,11 +75,12 @@ tensor([[0, 2, 1]])
 
 The public API is `batch_linear_assignment(cost)` with cost shape `(B, W, T)`. Assignments have shape `(B, W)`, use `torch.long`, and contain `-1` for an unmatched worker.
 
-| Input and runtime                                                                                                                                         | Backend and behavior                                                               |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| CPU input on any supported OS                                                                                                                             | SciPy on CPU. This remains the reference path.                                     |
-| Linux NVIDIA GPU with compute capability 8.0 or newer, Torch >= 2.4, and Triton available                                                                 | Lazy Triton CUDA backend. The first call can include Triton compilation.           |
-| CUDA input on an unsupported OS; non-NVIDIA Linux accelerator; NVIDIA GPU below compute capability 8.0 (including T4); or missing/ineligible Triton/Torch | Warn once, solve with SciPy on CPU, and return the assignment on the input device. |
+| Input and runtime                                                                                                                                    | Backend and behavior                                                               |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| CPU input on any supported OS                                                                                                                        | SciPy on CPU. This remains the reference path.                                     |
+| Linux NVIDIA GPU with compute capability 8.0 or newer, Torch >= 2.4, and Triton available                                                            | Lazy Triton CUDA backend. The first call can include Triton compilation.           |
+| Linux AMD GPU with a ROCm build of Torch >= 2.4 and Triton available                                                                                 | Lazy Triton backend. The first call can include Triton compilation.                |
+| CUDA input on an unsupported OS; other Linux accelerator; NVIDIA GPU below compute capability 8.0 (including T4); or missing/ineligible Triton/Torch | Warn once, solve with SciPy on CPU, and return the assignment on the input device. |
 
 The solver promotes `float16`, `bfloat16`, and integer costs to `float32`; `float64` costs remain `float64`. Triton execution disables autocast, so precision already lost before entry cannot be recovered.
 
@@ -87,7 +88,7 @@ Non-finite costs follow the SciPy contract. `NaN` and `-inf` raise `ValueError("
 
 ## Validation and performance status
 
-GPU validation is author-run rather than hosted CI. The validation targets are Linux NVIDIA GPUs with compute capability 8.0 or newer (for example, L4, A100, H100, or RTX PRO 6000 Blackwell):
+GPU validation is author-run rather than hosted CI. The validation targets are Linux NVIDIA GPUs with compute capability 8.0 or newer (for example, L4, A100, H100, or RTX PRO 6000 Blackwell) and Linux AMD GPUs with ROCm (for example, MI250X):
 
 ```bash
 make validate   # correctness once; prints GPU metadata when available

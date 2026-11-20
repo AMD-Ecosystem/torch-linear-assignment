@@ -63,14 +63,13 @@ def _load_legacy_backend() -> ModuleType | None:
 
 def _cuda_uses_triton(cost: torch.Tensor) -> bool:
     """Return whether this CUDA cost tensor can use the supported Triton path."""
-    if (
-        sys.platform != "linux"
-        or not _torch_supports_triton()
-        or not torch.cuda.is_available()
-        or torch.version.cuda is None
+    if sys.platform != "linux" or not _torch_supports_triton() or not torch.cuda.is_available():
+        return False
+    if torch.version.hip is None and (
+        torch.version.cuda is None or torch.cuda.get_device_capability(cost.device) < (8, 0)
     ):
         return False
-    return torch.cuda.get_device_capability(cost.device) >= (8, 0) and _load_triton_backend() is not None
+    return _load_triton_backend() is not None
 
 
 def _warn_cuda_fallback() -> None:

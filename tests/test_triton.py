@@ -22,8 +22,8 @@ def _compiled_triton_skip_reason() -> str | None:
         return "compiled Triton acceptance requires Linux; macOS fallback is not kernel evidence"
     if not torch.cuda.is_available():
         return "compiled Triton acceptance requires an available CUDA device"
-    if torch.version.cuda is None:
-        return "compiled Triton acceptance requires a CUDA-enabled PyTorch build"
+    if torch.version.cuda is None and torch.version.hip is None:
+        return "compiled Triton acceptance requires a CUDA or ROCm PyTorch build"
     version = re.match(r"(\d+)\.(\d+)", torch.__version__)
     if version is None or tuple(map(int, version.groups())) < _MINIMUM_TORCH_VERSION:
         return "compiled Triton acceptance requires PyTorch 2.4 or newer"
@@ -46,7 +46,7 @@ def _compiled_device_params():
     for device_index in range(torch.cuda.device_count()):
         capability = torch.cuda.get_device_capability(device_index)
         device = torch.device(f"cuda:{device_index}")
-        if capability < (8, 0):
+        if torch.version.hip is None and capability < (8, 0):
             params.append(
                 pytest.param(
                     device,

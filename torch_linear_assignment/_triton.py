@@ -2,9 +2,10 @@
 
 Purpose:
     Provide the private CUDA implementation selected by ``assignment.py`` on
-    supported Linux NVIDIA systems. The module owns no public dispatch policy;
-    importing it is deliberately deferred until the caller has established that
-    CUDA, the Torch version, and the GPU capability are eligible.
+    supported Linux NVIDIA and AMD systems. The module owns no public dispatch
+    policy; importing it is deliberately deferred until the caller has
+    established that CUDA, the Torch version, and the GPU capability are
+    eligible.
 
 Scope:
     One Triton program solves one batch item. The program is intentionally
